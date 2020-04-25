@@ -3,8 +3,14 @@ name = "tun2tor"
 version = "0.1.0"
 authors = ["Conrad Kramer <conrad@kramerapps.com>"]
 
+[target.'cfg(target_os="android")'.dependencies]
+jni = { version = "0.10", default-features = false }
+error-chain = { version = "0.12", default-features = false }
+log = "0.4"
+android_logger = "0.5"
+
 [lib]
-crate-type = ["lib", "staticlib"]
+crate-type = ["dylib"]
 
 [dependencies]
 byteorder = "1.2"

@@ -1,17 +1,18 @@
 use std::ffi::CStr;
 use std::io::{self, Read, Write};
 use std::mem;
-use std::net::{SocketAddr, IpAddr, Ipv4Addr};
-use std::os::unix::io::{RawFd, FromRawFd, IntoRawFd, AsRawFd};
+use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+use std::os::unix::io::{AsRawFd, FromRawFd, IntoRawFd, RawFd};
 use std::ptr;
 
 use byteorder::{ByteOrder, NetworkEndian};
-use mio::{Evented, Ready, Poll, PollOpt, Token};
 use mio::unix::EventedFd;
-use nix::libc::{getsockopt, socklen_t, c_void, c_int};
-use nix::sys::socket::{self, SockAddr, InetAddr, sockaddr, sockaddr_in, socket, connect, SockType,
-                       AddressFamily, SockFlag, SOCK_NONBLOCK, SOCK_CLOEXEC, SYSPROTO_CONTROL,
-                       AF_INET, AF_INET6};
+use mio::{Evented, Poll, PollOpt, Ready, Token};
+use nix::libc::{c_int, c_void, getsockopt, socklen_t};
+use nix::sys::socket::{
+    self, connect, sockaddr, sockaddr_in, socket, AddressFamily, InetAddr, SockAddr, SockFlag,
+    SockType, AF_INET, AF_INET6, SOCK_CLOEXEC, SOCK_NONBLOCK, SYSPROTO_CONTROL,
+};
 use nix::sys::uio::{readv, writev, IoVec};
 use nix::unistd::close;
 
@@ -28,7 +29,6 @@ macro_rules! ifreq_prop {
     ($get:ident, $set:ident, $ioctl_get:ident, $ioctl_set:ident) => {
         pub fn $set(&self, addr: Ipv4Addr) -> io::Result<()> {
             let ifname = self.ifname()?;
-            
             let addr_in = match InetAddr::from_std(&SocketAddr::new(IpAddr::V4(addr), 0)) {
                 InetAddr::V4(addr_in) => addr_in,
                 _ => unreachable!()
@@ -89,6 +89,10 @@ impl Tun {
         Ok(Tun { fd: fd })
     }
 
+    pub fn open(fd: RawFd) -> io::Result<Tun> {
+        Ok(Tun { fd: fd })
+    }
+
     pub fn ifname(&self) -> io::Result<String> {
         let mut buf = [0; super::IFNAMSIZ];
         let mut len = buf.len() as socklen_t;
@@ -104,9 +108,7 @@ impl Tun {
         if success != 0 {
             return Err(io::Error::last_os_error());
         }
-        Ok(unsafe {
-            CStr::from_ptr(buf.as_ptr()).to_str().unwrap().to_string()
-        })
+        Ok(unsafe { CStr::from_ptr(buf.as_ptr()).to_str().unwrap().to_string() })
     }
 
     ifreq_prop!(addr, set_addr, IOC_GET_IFADDR, IOC_SET_IFADDR);

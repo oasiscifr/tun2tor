@@ -1,13 +1,13 @@
 use std::ffi::CStr;
 use std::io::{self, Read, Write};
 use std::mem;
-use std::os::unix::io::{RawFd, FromRawFd, IntoRawFd, AsRawFd};
+use std::os::unix::io::{AsRawFd, FromRawFd, IntoRawFd, RawFd};
 
-use mio::{Evented, Ready, Poll, PollOpt, Token};
 use mio::unix::EventedFd;
+use mio::{Evented, Poll, PollOpt, Ready, Token};
 use nix::fcntl::{open, O_RDWR};
 use nix::sys::stat::Mode;
-use nix::unistd::{read, write, close};
+use nix::unistd::{close, read, write};
 
 const TUN_PATH: &'static str = "/dev/net/tun";
 
@@ -32,6 +32,17 @@ impl Tun {
 
         ioctl!(set_iff with iow!(IOC_TUN_MAGIC, TUN_SET_IFF, 4));
         unsafe { set_iff(fd, &mut ifreq as *mut _ as *mut u8)? };
+        Ok(Tun { fd: fd })
+    }
+
+    pub fn open(fd: RawFd) -> io::Result<Tun> {
+        // let mut ifreq: super::ifreq_flags = unsafe { mem::zeroed() };
+        // ifreq.ifra_flags = IFF_TUN | IFF_NO_PI;
+
+        // let fd = open(TUN_PATH, O_RDWR, Mode::empty())?;
+
+        // ioctl!(set_iff with iow!(IOC_TUN_MAGIC, TUN_SET_IFF, 4));
+        // unsafe { set_iff(fd, &mut ifreq as *mut _ as *mut u8)? };
         Ok(Tun { fd: fd })
     }
 
